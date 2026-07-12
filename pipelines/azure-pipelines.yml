@@ -1,0 +1,82 @@
+trigger:
+  branches:
+    include:
+      - main
+      - dev
+
+pr:
+  branches:
+    include:
+      - dev
+      - main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  semanticModelPath: 'sample-project/SalesReport.SemanticModel'
+  bpaRulesPath: 'pipelines/bpa-rules.json'
+
+stages:
+  - stage: Validate
+    displayName: 'Validate semantic model (PR gate)'
+    jobs:
+      - job: RunBPA
+        displayName: 'Tabular Editor Best Practice Analyzer'
+        steps:
+          - task: PowerShell@2
+            displayName: 'Install Tabular Editor 2 CLI'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Invoke-WebRequest -Uri "https://cdn.tabulareditor.com/files/TabularEditor.Portable.zip" -OutFile "TabularEditor.zip"
+                Expand-Archive -Path "TabularEditor.zip" -DestinationPath "$(Build.SourcesDirectory)\TabularEditor"
+
+          - task: PowerShell@2
+            displayName: 'Run Best Practice Analyzer against changed semantic model'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $te = "$(Build.SourcesDirectory)\TabularEditor\TabularEditor.exe"
+                $model = "$(Build.SourcesDirectory)\$(semanticModelPath)"
+                $rules = "$(Build.SourcesDirectory)\$(bpaRulesPath)"
+
+                & $te $model -A $rules -SET ErrorLevel
+
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Best Practice Analyzer found blocking issues. See log above."
+                  exit 1
+                }
+
+  - stage: Deploy
+    displayName: 'Deploy to Power BI Service'
+    dependsOn: Validate
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: DeployToProduction
+        steps:
+          - task: PowerShell@2
+            displayName: 'Publish compiled .pbix via Power BI REST API'
+            inputs:
+              targetType: 'inline'
+              script: |
+                # Uses a service principal (client credentials flow) — never a personal login.
+                # Client ID / secret pulled from an Azure DevOps variable group backed by Key Vault,
+                # not hardcoded here.
+                $tokenBody = @{
+                  grant_type    = "client_credentials"
+                  client_id     = "$(PBI_SP_CLIENT_ID)"
+                  client_secret = "$(PBI_SP_CLIENT_SECRET)"
+                  resource      = "https://analysis.windows.net/powerbi/api"
+                }
+                $token = Invoke-RestMethod -Method Post `
+                  -Uri "https://login.microsoftonline.com/$(PBI_TENANT_ID)/oauth2/token" `
+                  -Body $tokenBody
+
+                $headers = @{ Authorization = "Bearer $($token.access_token)" }
+
+                Invoke-RestMethod -Method Post `
+                  -Uri "https://api.powerbi.com/v1.0/myorg/groups/$(PBI_PROD_WORKSPACE_ID)/imports?datasetDisplayName=SalesReport&nameConflict=Overwrite" `
+                  -Headers $headers `
+                  -InFile "$(Build.SourcesDirectory)/sample-project/SalesReport.pbix" `
+                  -ContentType "multipart/form-data"

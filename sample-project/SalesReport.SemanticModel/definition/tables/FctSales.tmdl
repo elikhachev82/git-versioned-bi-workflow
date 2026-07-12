@@ -1,0 +1,83 @@
+table FctSales
+	lineageTag: 8f2a1c3d-0001-4a2b-9c3d-000000000001
+
+	measure 'Total Revenue' = SUM(FctSales[extended_revenue])
+		formatString: "$#,##0"
+		lineageTag: 8f2a1c3d-0002-4a2b-9c3d-000000000002
+		description: "Sum of extended_revenue across all order lines in the current filter context."
+
+	measure 'Total Margin' = SUM(FctSales[extended_margin])
+		formatString: "$#,##0"
+		lineageTag: 8f2a1c3d-0003-4a2b-9c3d-000000000003
+		description: "Sum of extended_margin. Do not divide this by Total Revenue for margin % -- use 'Margin %' instead to avoid Simpson's paradox across mixed product mixes."
+
+	measure 'Margin %' = DIVIDE([Total Margin], [Total Revenue])
+		formatString: "0.0%"
+		lineageTag: 8f2a1c3d-0004-4a2b-9c3d-000000000004
+		description: "Weighted margin percent -- always compute as Total Margin / Total Revenue, never average of row-level margin_pct."
+
+	measure 'Revenue vs Prior Month' =
+			VAR CurrentRevenue = [Total Revenue]
+			VAR PriorRevenue =
+				CALCULATE(
+					[Total Revenue],
+					DATEADD('Date'[Date], -1, MONTH)
+				)
+			RETURN
+				DIVIDE(CurrentRevenue - PriorRevenue, PriorRevenue)
+		formatString: "0.0%;-0.0%"
+		lineageTag: 8f2a1c3d-0005-4a2b-9c3d-000000000005
+		description: "MoM revenue growth. Requires a marked date table relationship on order_date."
+
+	column order_id
+		dataType: string
+		lineageTag: 8f2a1c3d-0006-4a2b-9c3d-000000000006
+		summarizeBy: none
+		sourceColumn: order_id
+
+	column order_date
+		dataType: dateTime
+		lineageTag: 8f2a1c3d-0007-4a2b-9c3d-000000000007
+		summarizeBy: none
+		sourceColumn: order_date
+
+	column customer_key
+		dataType: string
+		lineageTag: 8f2a1c3d-0008-4a2b-9c3d-000000000008
+		summarizeBy: none
+		sourceColumn: customer_key
+		isHidden
+
+	column product_key
+		dataType: string
+		lineageTag: 8f2a1c3d-0009-4a2b-9c3d-000000000009
+		summarizeBy: none
+		sourceColumn: product_key
+		isHidden
+
+	column extended_revenue
+		dataType: double
+		lineageTag: 8f2a1c3d-0010-4a2b-9c3d-000000000010
+		summarizeBy: sum
+		sourceColumn: extended_revenue
+		isHidden
+
+	column extended_margin
+		dataType: double
+		lineageTag: 8f2a1c3d-0011-4a2b-9c3d-000000000011
+		summarizeBy: sum
+		sourceColumn: extended_margin
+		isHidden
+
+	partition FctSales = m
+		mode: import
+		source =
+				let
+					Source = Snowflake.Databases("nikkiso_analytics.snowflakecomputing.com", "TRANSFORM_WH"),
+					Database = Source{[Name="NIKKISO_ANALYTICS"]}[Data],
+					Schema = Database{[Name="MARTS"]}[Data],
+					Table = Schema{[Name="FCT_SALES"]}[Data]
+				in
+					Table
+
+	annotation PBI_ResultType = Table
