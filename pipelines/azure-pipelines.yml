@@ -14,7 +14,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  semanticModelPath: 'sample-project/sample-project-v2.SemanticModel'
+  semanticModelPath: 'sample-project/sample-project-v2.SemanticModel/definition/model.tmdl'
   bpaRulesPath: 'pipelines/bpa-rules.json'
 
 stages:
@@ -41,7 +41,7 @@ stages:
                 $model = "$(Build.SourcesDirectory)\$(semanticModelPath)"
                 $rules = "$(Build.SourcesDirectory)\$(bpaRulesPath)"
 
-                & $te $model -A $rules -SET ErrorLevel
+                & $te $model -A $rules
 
                 if ($LASTEXITCODE -ne 0) {
                   Write-Error "Best Practice Analyzer found blocking issues. See log above."
