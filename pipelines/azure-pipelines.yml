@@ -14,7 +14,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  semanticModelPath: 'sample-project/SalesReport.SemanticModel'
+  semanticModelPath: 'sample-project/sample-project-v2.SemanticModel'
   bpaRulesPath: 'pipelines/bpa-rules.json'
 
 stages:
@@ -78,5 +78,5 @@ stages:
                 Invoke-RestMethod -Method Post `
                   -Uri "https://api.powerbi.com/v1.0/myorg/groups/$(PBI_PROD_WORKSPACE_ID)/imports?datasetDisplayName=SalesReport&nameConflict=Overwrite" `
                   -Headers $headers `
-                  -InFile "$(Build.SourcesDirectory)/sample-project/SalesReport.pbix" `
+                  -InFile "$(Build.SourcesDirectory)/sample-project/sample-project-v2.pbix" `
                   -ContentType "multipart/form-data"
