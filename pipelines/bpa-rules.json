@@ -1,50 +1,38 @@
-{
-  "$schema": "https://raw.githubusercontent.com/microsoft/Analysis-Services/master/BestPracticeRules/BPARuleSchema.json",
-  "rules": [
-    {
-      "ID": "NO_UNUSED_COLUMNS",
-      "Name": "Do not use unnecessary columns",
-      "Category": "Performance",
-      "Severity": 2,
-      "Scope": "Column",
-      "Expression": "not(Model.Tables.Any(t => t.Columns.Contains(this)) and IsHidden = false and UsedInRelationships.Count = 0 and UsedInSortBy.Count = 0)",
-      "Description": "Unused visible columns bloat model size and confuse self-service users."
-    },
-    {
-      "ID": "MEASURE_NAMING",
-      "Name": "Measures must use Sentence case, no abbreviations",
-      "Category": "Naming Conventions",
-      "Severity": 1,
-      "Scope": "Measure",
-      "Expression": "Regex.IsMatch(Name, \"^[A-Z][a-z0-9 %/$#-]+$\")",
-      "Description": "Enforces the team naming standard so self-service users can read measure names without a glossary."
-    },
-    {
-      "ID": "NO_BIDIRECTIONAL_RELATIONSHIPS",
-      "Name": "Avoid bi-directional relationships unless explicitly justified",
-      "Category": "DAX Expressions",
-      "Severity": 2,
-      "Scope": "Relationship",
-      "Expression": "CrossFilteringBehavior <> \"BothDirections\"",
-      "Description": "Bi-directional filtering is a common source of ambiguous filter context and performance issues."
-    },
-    {
-      "ID": "NO_FLOATING_POINT_KEYS",
-      "Name": "Relationship keys must not be floating point",
-      "Category": "Data Model",
-      "Severity": 2,
-      "Scope": "Relationship",
-      "Expression": "FromColumn.DataType <> \"Double\" and ToColumn.DataType <> \"Double\"",
-      "Description": "Floating point join keys risk silent mismatches."
-    },
-    {
-      "ID": "DESCRIPTIONS_REQUIRED",
-      "Name": "Every measure must have a description",
-      "Category": "Documentation",
-      "Severity": 1,
-      "Scope": "Measure",
-      "Expression": "not(string.IsNullOrWhiteSpace(Description))",
-      "Description": "Descriptions surface as tooltips in Power BI Service, making self-service reporting usable without a data dictionary."
-    }
-  ]
-}
+[
+  {
+    "ID": "NO_UNUSED_COLUMNS",
+    "Name": "Do not use unnecessary columns",
+    "Category": "Performance",
+    "Severity": 2,
+    "Scope": "Column",
+    "Expression": "IsHidden or UsedInRelationships.Any() or UsedInSortBy.Any()",
+    "Description": "Unused visible columns bloat model size and confuse self-service users."
+  },
+  {
+    "ID": "NO_BIDIRECTIONAL_RELATIONSHIPS",
+    "Name": "Avoid bi-directional relationships unless explicitly justified",
+    "Category": "DAX Expressions",
+    "Severity": 2,
+    "Scope": "Relationship",
+    "Expression": "CrossFilteringBehavior <> \"BothDirections\"",
+    "Description": "Bi-directional filtering is a common source of ambiguous filter context and performance issues."
+  },
+  {
+    "ID": "NO_FLOATING_POINT_KEYS",
+    "Name": "Relationship keys must not be floating point",
+    "Category": "Data Model",
+    "Severity": 2,
+    "Scope": "Relationship",
+    "Expression": "FromColumn.DataType <> \"Double\" and ToColumn.DataType <> \"Double\"",
+    "Description": "Floating point join keys risk silent mismatches."
+  },
+  {
+    "ID": "DESCRIPTIONS_REQUIRED",
+    "Name": "Every measure must have a description",
+    "Category": "Documentation",
+    "Severity": 1,
+    "Scope": "Measure",
+    "Expression": "Description <> null",
+    "Description": "Descriptions surface as tooltips in Power BI Service, making self-service reporting usable without a data dictionary."
+  }
+]

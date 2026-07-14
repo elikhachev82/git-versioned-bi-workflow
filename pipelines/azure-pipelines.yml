@@ -14,7 +14,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  semanticModelPath: 'sample-project/SalesReport.SemanticModel'
+  semanticModelPath: 'sample-project/sample-project-v2.SemanticModel/definition/model.tmdl'
   bpaRulesPath: 'pipelines/bpa-rules.json'
 
 stages:
@@ -41,7 +41,7 @@ stages:
                 $model = "$(Build.SourcesDirectory)\$(semanticModelPath)"
                 $rules = "$(Build.SourcesDirectory)\$(bpaRulesPath)"
 
-                & $te $model -A $rules -SET ErrorLevel
+                & $te $model -A $rules
 
                 if ($LASTEXITCODE -ne 0) {
                   Write-Error "Best Practice Analyzer found blocking issues. See log above."
@@ -78,5 +78,5 @@ stages:
                 Invoke-RestMethod -Method Post `
                   -Uri "https://api.powerbi.com/v1.0/myorg/groups/$(PBI_PROD_WORKSPACE_ID)/imports?datasetDisplayName=SalesReport&nameConflict=Overwrite" `
                   -Headers $headers `
-                  -InFile "$(Build.SourcesDirectory)/sample-project/SalesReport.pbix" `
+                  -InFile "$(Build.SourcesDirectory)/sample-project/sample-project-v2.pbix" `
                   -ContentType "multipart/form-data"
