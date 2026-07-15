@@ -29,7 +29,7 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                Invoke-WebRequest -Uri "https://cdn.tabulareditor.com/files/TabularEditor.Portable.zip" -OutFile "TabularEditor.zip"
+                Invoke-WebRequest -Uri "https://cdn.tabulareditor.com/files/TabularEditor.2.28.0.zip" -OutFile "TabularEditor.zip"
                 Expand-Archive -Path "TabularEditor.zip" -DestinationPath "$(Build.SourcesDirectory)\TabularEditor"
 
           - task: PowerShell@2
